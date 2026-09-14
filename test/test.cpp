@@ -1,4 +1,6 @@
 #include <gtest/gtest.h>
+#include "integralApproximator.hpp"
 
-
-TEST(exampleTest, test1) { EXPECT_EQ(3 + 1, 4); }
+TEST(Exercise1, approximateLineIntegral) { 
+    EXPECT_EQ(approximateIntegral([] {}, 0, 1), 1); 
+}

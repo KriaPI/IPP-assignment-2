@@ -5,7 +5,7 @@ add_executable(example test.cpp)
 
 # Link targets
 target_link_libraries(example PRIVATE
-    GTest::gtest GTest::gtest_main
+    GTest::gtest GTest::gtest_main integralApproximator
 )
 
 # Define tests
