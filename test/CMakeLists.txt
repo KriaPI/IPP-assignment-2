@@ -1,13 +1,12 @@
 include(GoogleTest)
 
 # Define executable targets
-add_executable(place test.cpp)
+add_executable(example test.cpp)
 
 # Link targets
-target_link_libraries(place PRIVATE
+target_link_libraries(example PRIVATE
     GTest::gtest GTest::gtest_main
-    placeHolderLibrary
 )
 
 # Define tests
-gtest_discover_tests(place)
+gtest_discover_tests(example)
