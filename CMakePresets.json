@@ -3,9 +3,6 @@
     "configurePresets": [
         {
             "name": "base",
-            "cacheVariables": {
-                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-            },
             "binaryDir": "./build",
             "hidden": true
         },
@@ -20,12 +17,6 @@
             "displayName": "Unix Makefiles",
             "inherits": ["base"],
             "generator": "Unix Makefiles"
-        },
-        {
-            "name": "ninja",
-            "displayName": "Ninja",
-            "inherits": ["base"],
-            "generator": "Ninja"
         },
         {
             "name": "msvc",
