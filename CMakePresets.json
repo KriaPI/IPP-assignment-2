@@ -10,7 +10,10 @@
             "name": "mingw",
             "displayName": "MinGW-w64 makefiles",
             "inherits": ["base"],
-            "generator": "MinGW Makefiles"
+            "generator": "MinGW Makefiles",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
         },
         {
             "name": "unix",

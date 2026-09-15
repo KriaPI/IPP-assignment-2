@@ -38,7 +38,7 @@ Format files of all CMake targets with Clang-format:
 
 Run static analysis on files using Clang-tidy:
 
-    cmake --build build --target=check
+    cmake --build build --target=lint
 
 ## Modifying the template
 Use CMake's `add_executable` and `add_library` for adding source files. To define header search paths for a compiler, in other words include directories, use `target_include_directories`. 
