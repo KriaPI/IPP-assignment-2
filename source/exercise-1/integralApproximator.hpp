@@ -1,14 +1,17 @@
 #pragma once
 #include <functional>
 #include <algorithm>
+#include <cmath>
 #include <vector>
+#include <pthread.h>
 
 using numerical = double;
 
 struct threadData {
-    numerical& sum;  
+    numerical* sum;  
     numerical lower;
     numerical upper;
+    numerical stepSize;
     size_t trapezes;
     std::function<numerical(numerical)> integrand;
 };
@@ -62,19 +65,27 @@ numerical approximateIntegralThreaded(T integrand, numerical lower, numerical up
     
     numerical result {0};
     std::vector<pthread_t> threads(threadCount);
-    std::vector<threadData> data(threadCount);
+    std::vector<threadData> data();
+    auto boundLength {upper - lower};
+    auto trapezes {std::ceil(boundLength / static_cast<numerical>(threadCount))};
+
     int index = 0;
-    for (const auto& thread: threads) {
+    for () {
         // TODO: divide work (think about the fact that trapezes may be differently size if we 
         // assume that the intervals are of equal size).
         // TODO: pass data and function.
-        
+        // 8 divide by 3: 3, 3, 2
+        //  ceil(8.0 / 3.0) = 3, 8 % 3 = 2
+        data.emplace_back(threadData{
+            .integrand = integrand,
+            .lower =   
+        });
         pthread_create(&thread, nullptr, &approximateIntegralWrapper, nullptr);
     }
 
     for (const auto& thread: threads) {
-        pthread_join(thread);
+        pthread_join(thread, nullptr);
     }
 
-    return approximateIntegral(integrand, lower, upper, trapezes);
+    return result;
 }

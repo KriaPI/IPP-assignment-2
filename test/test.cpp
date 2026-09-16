@@ -26,7 +26,7 @@ TEST(Exercise1, approximatePolynomialIntegralThreaded0) {
     ); 
 }
 
-TEST(Exercise1, approximatePolynomialIntegralThreaded0) { 
+TEST(Exercise1, approximatePolynomialIntegralThreaded1) { 
     EXPECT_EQ(
         approximateIntegral([] (auto x) {return 4 / (1 + (x * x));}, 0, 1, 19),
         approximateIntegralThreaded([] (auto x) {return 4 / (1 + (x * x));}, 0, 1, 19, 4)
