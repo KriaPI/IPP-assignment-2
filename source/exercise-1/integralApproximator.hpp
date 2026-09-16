@@ -1,9 +1,9 @@
 #pragma once
 #include <functional>
-#include <algorithm>
-#include <cmath>
+#include <memory>
 #include <vector>
 #include <pthread.h>
+#include <iostream>
 
 using numerical = double;
 
@@ -12,7 +12,7 @@ struct IntegralBounds {
     numerical upper;
 };
 
-struct threadData {
+struct ThreadData {
     std::function<numerical(numerical)> integrand;
     IntegralBounds bounds;
     size_t trapezes;
@@ -30,27 +30,29 @@ struct threadData {
 template <typename T> 
 numerical approximateIntegral(T integrand, numerical lower, numerical upper, size_t trapezes) {
     numerical result {0}; 
-    const numerical chunkSize = (upper - lower) / static_cast<numerical>(trapezes);
+    const numerical width = (upper - lower) / static_cast<numerical>(trapezes);
     
-    for (numerical currentLower = lower; currentLower < upper; currentLower += chunkSize) {
-        // TODO: avoid duplicate function calls.
-        auto a {integrand(currentLower)};
-        auto b {integrand(currentLower + chunkSize)};
-
-        auto rectangle {std::min(a, b) * chunkSize};
-        auto triangleHeight {std::abs(b - a)};
-        auto triangle {triangleHeight * chunkSize / 2};
-        auto trapeze = rectangle + triangle;
-        result += trapeze;
+    auto a {integrand(lower)};
+    for (size_t i = 0; i < trapezes; ++i)
+     {
+        auto currentLower {lower + (static_cast<numerical>(i) * width)};
+        auto b {integrand(currentLower + width)};
+        
+        auto area {(a + b) * width / 2};
+        result += area;
+        a = b;
     }
 
     return result;
 }
 
 void* approximateIntegralWrapper(void* data) {
-    threadData& inputs {*static_cast<threadData*>(data)};
-    auto result {approximateIntegral(inputs.integrand, inputs.bounds.lower, inputs.bounds.upper, inputs.trapezes)};    
-    // TODO: write to inputs.sum.
+    const ThreadData& inputs {*static_cast<ThreadData*>(data)};
+    auto partialSum {approximateIntegral(inputs.integrand, inputs.bounds.lower, inputs.bounds.upper, inputs.trapezes)};    
+    
+    pthread_mutex_lock(inputs.sharedLock);
+    *inputs.sum += partialSum;
+    pthread_mutex_unlock(inputs.sharedLock);
 
     pthread_exit(nullptr);
 }
@@ -72,7 +74,8 @@ numerical approximateIntegralThreaded(T integrand, IntegralBounds bounds, size_t
     
     numerical result {0};
     std::vector<pthread_t> threads(threadCount);
-    std::vector<threadData> data{};
+    // TODO: use a smart pointer instead (shared or )
+    auto data { std::make_unique<ThreadData[]>(threadCount)};
     pthread_mutex_t sharedLock = PTHREAD_MUTEX_INITIALIZER;
     
     const size_t minimumTrapezesPerThread {trapezes / threadCount};
@@ -83,20 +86,23 @@ numerical approximateIntegralThreaded(T integrand, IntegralBounds bounds, size_t
 
     auto currentLower {bounds.lower};
 
-    for (const auto& thread: threads) {
+    for (size_t i = 0; i < threads.size(); ++i) {
         auto trapezesPerThread {remainingTrapezes > 0 ? minimumTrapezesPerThread + 1: minimumTrapezesPerThread};
-        --remainingTrapezes;
+        // This is required to avoid integer underflow of unsigned integers!
+        if (remainingTrapezes > 0) {
+            --remainingTrapezes;
+        }
         auto currentUpper {currentLower + (static_cast<numerical>(trapezesPerThread) * trapezeWidth)};
 
-        auto& threadData = data.emplace_back({
-            .integrand = integrand,
-            .bounds = IntegralBounds{.lower = currentLower, .upper = currentUpper},
-            .trapezes = trapezesPerThread,
-            .sum = &result,
-            .sharedLock = &sharedLock
-        });
+        data[i] = {
+            integrand,
+            IntegralBounds{.lower = currentLower, .upper = currentUpper},
+            trapezesPerThread,
+            &result,
+            &sharedLock
+        };
         currentLower = currentUpper;
-        pthread_create(std::addressof(thread), nullptr, approximateIntegralWrapper, &threadData);
+        pthread_create(std::addressof(threads[i]), nullptr, approximateIntegralWrapper, &data[i]);
     }
 
     for (const auto& thread: threads) {

@@ -4,16 +4,16 @@
         {
             "name": "base",
             "binaryDir": "./build",
-            "hidden": true
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
         },
         {
             "name": "mingw",
             "displayName": "MinGW-w64 makefiles",
             "inherits": ["base"],
-            "generator": "MinGW Makefiles",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
-            }
+            "generator": "MinGW Makefiles"
         },
         {
             "name": "unix",
