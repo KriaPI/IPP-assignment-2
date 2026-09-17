@@ -1,20 +1,26 @@
 #pragma once
 #include <functional>
-#include <algorithm>
-#include <cmath>
+#include <memory>
 #include <vector>
 #include <pthread.h>
+#include <iostream>
 
 using numerical = double;
 
-struct threadData {
-    numerical* sum;  
+struct IntegralBounds {
     numerical lower;
     numerical upper;
-    numerical stepSize;
-    size_t trapezes;
-    std::function<numerical(numerical)> integrand;
 };
+
+struct ThreadData {
+    std::function<numerical(numerical)> integrand;
+    IntegralBounds bounds;
+    size_t trapezes;
+    numerical* sum; 
+    pthread_mutex_t* sharedLock; 
+};
+
+
 
 /// @brief Approximate an integral using trapeses.
 /// @param function A function that takes a floating-point number. 
@@ -24,30 +30,33 @@ struct threadData {
 template <typename T> 
 numerical approximateIntegral(T integrand, numerical lower, numerical upper, size_t trapezes) {
     numerical result {0}; 
-    const numerical chunkSize = (upper - lower) / static_cast<numerical>(trapezes);
+    const numerical width = (upper - lower) / static_cast<numerical>(trapezes);
     
-    for (numerical currentLower = lower; currentLower < upper; currentLower += chunkSize) {
-        // TODO: avoid duplicate function calls.
-        auto a {integrand(currentLower)};
-        auto b {integrand(currentLower + chunkSize)};
-
-        auto rectangle {std::min(a, b) * chunkSize};
-        auto triangleHeight {std::abs(b - a)};
-        auto triangle {triangleHeight * chunkSize / 2};
-        auto trapeze = rectangle + triangle;
-        result += trapeze;
+    auto a {integrand(lower)};
+    for (size_t i = 0; i < trapezes; ++i)
+     {
+        auto currentLower {lower + (static_cast<numerical>(i) * width)};
+        auto b {integrand(currentLower + width)};
+        
+        auto area {(a + b) * width / 2};
+        result += area;
+        a = b;
     }
 
     return result;
 }
 
 void* approximateIntegralWrapper(void* data) {
-    threadData& inputs {*static_cast<threadData*>(data)};
-    auto result {approximateIntegral(inputs.integrand, inputs.lower, inputs.upper, inputs.trapezes)};    
-    // TODO: write to inputs.sum.
+    const ThreadData& inputs {*static_cast<ThreadData*>(data)};
+    auto partialSum {approximateIntegral(inputs.integrand, inputs.bounds.lower, inputs.bounds.upper, inputs.trapezes)};    
+    
+    pthread_mutex_lock(inputs.sharedLock);
+    *inputs.sum += partialSum;
+    pthread_mutex_unlock(inputs.sharedLock);
 
-    pthread_exit(0);
+    pthread_exit(nullptr);
 }
+
 
 /// @brief Approximate an integral using trapeses.
 /// @param function A function that takes a floating-point number and returns a floating-point number. 
@@ -57,7 +66,7 @@ void* approximateIntegralWrapper(void* data) {
 /// @param threads The number of threads used to calculate the integral.
 /// @return The approximate value of integrating the functions over the bounds [lower, upper].
 template <typename T> 
-numerical approximateIntegralThreaded(T integrand, numerical lower, numerical upper, size_t trapezes, int threadCount) {
+numerical approximateIntegralThreaded(T integrand, IntegralBounds bounds, size_t trapezes, int threadCount) {
     // Idea: 
     // Divide the work and spawn a new thread for each chunk
     // In each thread, compute the result and set the shared variable. 
@@ -65,22 +74,35 @@ numerical approximateIntegralThreaded(T integrand, numerical lower, numerical up
     
     numerical result {0};
     std::vector<pthread_t> threads(threadCount);
-    std::vector<threadData> data();
-    auto boundLength {upper - lower};
-    auto trapezes {std::ceil(boundLength / static_cast<numerical>(threadCount))};
+    // TODO: use a smart pointer instead (shared or )
+    auto data { std::make_unique<ThreadData[]>(threadCount)};
+    pthread_mutex_t sharedLock = PTHREAD_MUTEX_INITIALIZER;
+    
+    const size_t minimumTrapezesPerThread {trapezes / threadCount};
+    // This remainder should be spread across each thread.
+    auto remainingTrapezes {trapezes % threadCount};
+    auto boundLength {bounds.upper - bounds.lower};
+    auto trapezeWidth {boundLength / static_cast<numerical>(trapezes)};
 
-    int index = 0;
-    for () {
-        // TODO: divide work (think about the fact that trapezes may be differently size if we 
-        // assume that the intervals are of equal size).
-        // TODO: pass data and function.
-        // 8 divide by 3: 3, 3, 2
-        //  ceil(8.0 / 3.0) = 3, 8 % 3 = 2
-        data.emplace_back(threadData{
-            .integrand = integrand,
-            .lower =   
-        });
-        pthread_create(&thread, nullptr, &approximateIntegralWrapper, nullptr);
+    auto currentLower {bounds.lower};
+
+    for (size_t i = 0; i < threads.size(); ++i) {
+        auto trapezesPerThread {remainingTrapezes > 0 ? minimumTrapezesPerThread + 1: minimumTrapezesPerThread};
+        // This is required to avoid integer underflow of unsigned integers!
+        if (remainingTrapezes > 0) {
+            --remainingTrapezes;
+        }
+        auto currentUpper {currentLower + (static_cast<numerical>(trapezesPerThread) * trapezeWidth)};
+
+        data[i] = {
+            integrand,
+            IntegralBounds{.lower = currentLower, .upper = currentUpper},
+            trapezesPerThread,
+            &result,
+            &sharedLock
+        };
+        currentLower = currentUpper;
+        pthread_create(std::addressof(threads[i]), nullptr, approximateIntegralWrapper, &data[i]);
     }
 
     for (const auto& thread: threads) {
