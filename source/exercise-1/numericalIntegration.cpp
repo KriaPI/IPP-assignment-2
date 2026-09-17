@@ -1,13 +1,46 @@
-#include <iostream>
 #include "integralApproximator.hpp"
+#include <format>
+#include <span>
+#include <chrono>
+
+void usage() {
+    std::cout 
+    << "Usage: program T S\n"
+    << "\tT: total number of threads working on the task.\n"
+    << "\tS: number of trapezes used to approximate the integral.\n\n";
+}
+
+int parseArgument(char* argument, int argument_index) {
+    try {
+        return std::stoi(argument);
+    } catch (const std::exception&) {
+        std::cout << std::format("Could not parse argument {} assigned input '{}'.\n", argument_index, argument);
+        usage();
+        std::exit(0);
+    }
+}
 
 int main (int argc, char** argv) {
     // TODO: implement command line argument parsing.
 
-    const size_t trapezes {1000};
-    //auto integrand = [] (auto x) {return 4 / (1 + (x * x));};
+    int threadCount {1};
+    size_t trapezes {1};
+    
+    std::span<char*, std::dynamic_extent> arguments (argv + 1, argc - 1);
+    if (arguments.size() != 2) {
+        usage();
+        return 0;
+    }
+    threadCount = {parseArgument(arguments[0], 0)};
+    trapezes = parseArgument(arguments[1], 1);
     auto integrand = [] (numerical x) {return x;};
-    auto result = approximateIntegralThreaded(integrand, IntegralBounds{.lower = 0, .upper = 2}, trapezes, 6);
+
+    auto start {std::chrono::system_clock::now()};
+    [[maybe_unused]] auto result = approximateIntegralThreaded(integrand, IntegralBounds{.lower = 0, .upper = 1}, trapezes, threadCount);
+    std::chrono::duration<double> duration {std::chrono::system_clock::now() - start};
+    
+    auto durationInMS {std::chrono::duration_cast<std::chrono::milliseconds>(duration)};
+    std::cout << std::format("Duration: {}, Duration: {}\n", std::chrono::duration_cast<std::chrono::seconds>(duration), durationInMS);
 
     return 0;
 }
