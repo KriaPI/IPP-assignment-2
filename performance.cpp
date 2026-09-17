@@ -1,6 +1,7 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+// g++ -std=c++11 -Wall -pthread performance.cpp -o performance
 
 const int iterations = 100;
 
