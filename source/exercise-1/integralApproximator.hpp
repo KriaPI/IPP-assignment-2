@@ -3,7 +3,9 @@
 #include <memory>
 #include <vector>
 #include <pthread.h>
+
 #include <iostream>
+#include <format>
 
 using numerical = double;
 
@@ -15,7 +17,7 @@ struct IntegralBounds {
 struct ThreadData {
     std::function<numerical(numerical)> integrand;
     IntegralBounds bounds;
-    size_t trapezes;
+    int trapezes;
     numerical* sum; 
     pthread_mutex_t* sharedLock; 
 };
@@ -63,24 +65,21 @@ void* approximateIntegralWrapper(void* data) {
 /// @param lower The lower bound of the integral.
 /// @param upper The upper bound of the integral.
 /// @param trapezes The number of trapezes used to approximate the integral over the bounds.
-/// @param threads The number of threads used to calculate the integral.
+/// @param threads The number of threads used to calculate the integral. If this is higer than the number of trapezes, then
+/// trapezes is used as the number of threads instead.
 /// @return The approximate value of integrating the functions over the bounds [lower, upper].
 template <typename T> 
-numerical approximateIntegralThreaded(T integrand, IntegralBounds bounds, size_t trapezes, int threadCount) {
-    // Idea: 
-    // Divide the work and spawn a new thread for each chunk
-    // In each thread, compute the result and set the shared variable. 
-    // Join threads.
-    
+numerical approximateIntegralThreaded(T integrand, IntegralBounds bounds, int trapezes, int threadCount) {
+    const auto actualThreadCount {threadCount >= trapezes ? trapezes : threadCount};
+
     numerical result {0};
-    std::vector<pthread_t> threads(threadCount);
-    // TODO: use a smart pointer instead (shared or )
-    auto data { std::make_unique<ThreadData[]>(threadCount)};
+    std::vector<pthread_t> threads(actualThreadCount);
+    auto data { std::make_unique<ThreadData[]>(actualThreadCount)};
     pthread_mutex_t sharedLock = PTHREAD_MUTEX_INITIALIZER;
     
-    const size_t minimumTrapezesPerThread {trapezes / threadCount};
+    const auto minimumTrapezesPerThread {trapezes / actualThreadCount};
     // This remainder should be spread across each thread.
-    auto remainingTrapezes {trapezes % threadCount};
+    auto remainingTrapezes {trapezes % actualThreadCount};
     auto boundLength {bounds.upper - bounds.lower};
     auto trapezeWidth {boundLength / static_cast<numerical>(trapezes)};
 
@@ -93,6 +92,7 @@ numerical approximateIntegralThreaded(T integrand, IntegralBounds bounds, size_t
             --remainingTrapezes;
         }
         auto currentUpper {currentLower + (static_cast<numerical>(trapezesPerThread) * trapezeWidth)};
+        //std::cout << std::format("Thread #{}, trapezes: {}\n", i + 1, trapezesPerThread);
 
         data[i] = {
             integrand,
