@@ -40,7 +40,12 @@ def benchmark(name: str, start: int, end: int, stepsize: int):
     for t, (threadCount, timesForThread) in enumerate(zip(threads, completionTimes)):
         ax.plot(trapezes, timesForThread, color=colors[t], label=f"{threadCount} threads")
 
-    figure.legend(loc="outside center right")
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                 box.width, box.height * 0.9])
+
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+          fancybox=True, shadow=True, ncol=5)
     plt.savefig(f"{name}.png", dpi=400, bbox_inches='tight')
     np.savetxt(f"{name}.csv", completionTimes, fmt="%.2f")
 
