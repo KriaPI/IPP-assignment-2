@@ -19,7 +19,7 @@ def runAndGetResult(threadCount: int, trapezes: int, runs: int):
 subprocess.run(["g++", "-std=c++20", "-pthread", f"{programName}.cpp", "-o", f"{programName}"])
 
 def benchmark(name: str, start: int, end: int, stepsize: int):
-    threads = 2 ** np.arange(0, 5)
+    threads = 2 ** np.arange(0, 6)
     trapezes = np.arange(start, end + 1, stepsize)
 
     completionTimes = np.zeros((len(threads), len(trapezes)), dtype=float) 
