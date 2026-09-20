@@ -2,7 +2,6 @@
 #include <format>
 #include <iostream>
 #include <span>
-#include <chrono>
 
 void usage() {
     std::cout 
@@ -28,7 +27,13 @@ int main (int argc, char** argv) {
     int trapezes {1};
     
     std::span<char*, std::dynamic_extent> arguments (argv + 1, argc - 1);
+    if (arguments.size() == 1 && std::string("-h").compare(arguments[0]) == 0) {
+        usage();
+        return 0;
+    }
+
     if (arguments.size() != 2) {
+        std::cout << "Invalid usage.\n";
         usage();
         return 0;
     }
@@ -36,10 +41,8 @@ int main (int argc, char** argv) {
     trapezes = parseArgument(arguments[1], 1);
     auto integrand = [] (numerical x) {return 4 / (1 + x * x);};
 
-    auto start {std::chrono::system_clock::now()};
     [[maybe_unused]] auto result = approximateIntegralThreaded(integrand, IntegralBounds{.lower = 0, .upper = 1}, trapezes, threadCount);
-    std::chrono::duration<double> duration {std::chrono::system_clock::now() - start};
-    std::cout << std::format("Duration: {} seconds\n", duration.count());
+    
     //std::cout << std::format("Result: {}\n", result);
 
     return 0;

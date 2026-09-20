@@ -3,7 +3,7 @@ import re
 import numpy as np
 import matplotlib.pyplot as plt
 
-programName = "numericalIntegration"
+programName = "integralApproximator"
 
 # arraySize is in MB.
 def runAndGetResult(threadCount: int, trapezes: int, runs: int):
@@ -18,24 +18,32 @@ def runAndGetResult(threadCount: int, trapezes: int, runs: int):
 # Compile the program (just in case)
 subprocess.run(["g++", "-std=c++20", "-pthread", f"{programName}.cpp", "-o", f"{programName}"])
 
-threads = np.arange(1, 16 + 1, 1)
-trapezes = np.arange(1, 2_000_000 + 125_000, 125_000)
+def benchmark(name: str, start: int, end: int, stepsize: int):
+    threads = 2 ** np.arange(0, 5)
+    trapezes = np.arange(start, end + 1, stepsize)
 
-completionTimes = np.zeros((len(threads), len(trapezes)), dtype=float) 
+    completionTimes = np.zeros((len(threads), len(trapezes)), dtype=float) 
 
-# Run the program and retreive the time taken.
-for t, threadCount in enumerate(threads):
-    for n, trapezeCount in enumerate(trapezes):
-        completionTime = float(runAndGetResult(threadCount, trapezeCount, 10))
-        completionTimes[t][n] = completionTime
+    # Run the program and retreive the time taken.
+    for t, threadCount in enumerate(threads):
+        for n, trapezeCount in enumerate(trapezes):
+            completionTime = float(runAndGetResult(threadCount, trapezeCount, 10))
+            completionTimes[t][n] = completionTime
+
+    completionTimes = completionTimes * 1000
+
+    figure, ax = plt.subplots(layout='constrained')
+    ax.set_ylabel("Time [ms]")
+    ax.set_xlabel("Trapezes")
+    colors = plt.cm.turbo(np.linspace(0, 1, len(threads)))
+
+    for t, (threadCount, timesForThread) in enumerate(zip(threads, completionTimes)):
+        ax.plot(trapezes, timesForThread, color=colors[t], label=f"{threadCount} threads")
+
+    figure.legend(loc="outside center right")
+    plt.savefig(f"{name}.png", dpi=400, bbox_inches='tight')
+    np.savetxt(f"{name}.csv", completionTimes, fmt="%.2f")
 
 
-figure, ax = plt.subplots()
-ax.set_ylabel("Time [s]")
-ax.set_xlabel("Trapezes")
-for threadCount, timesForThread in zip(threads, completionTimes):
-    ax.plot(trapezes, timesForThread, label=f"{threadCount} threads")
-
-ax.legend()
-plt.savefig("exercise-1-time.png", dpi=400, bbox_inches='tight')
-np.savetxt("data.csv", completionTimes)
+benchmark(name="exercise-1-low", start=1, end=64, stepsize=4)
+benchmark(name="exercise-1-high", start=10_000, end=100_000, stepsize=10_000)

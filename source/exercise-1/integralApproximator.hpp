@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <format>
+#include <chrono>
 
 using numerical = double;
 
@@ -77,6 +78,8 @@ numerical approximateIntegralThreaded(T integrand, IntegralBounds bounds, int tr
     auto data { std::make_unique<ThreadData[]>(actualThreadCount)};
     pthread_mutex_t sharedLock = PTHREAD_MUTEX_INITIALIZER;
     
+    auto start {std::chrono::system_clock::now()};
+
     const auto minimumTrapezesPerThread {trapezes / actualThreadCount};
     // This remainder should be spread across each thread.
     auto remainingTrapezes {trapezes % actualThreadCount};
@@ -87,12 +90,11 @@ numerical approximateIntegralThreaded(T integrand, IntegralBounds bounds, int tr
 
     for (size_t i = 0; i < threads.size(); ++i) {
         auto trapezesPerThread {remainingTrapezes > 0 ? minimumTrapezesPerThread + 1: minimumTrapezesPerThread};
-        // This is required to avoid integer underflow of unsigned integers!
+        // This is required to avoid adding trapezes that do not exist.
         if (remainingTrapezes > 0) {
             --remainingTrapezes;
         }
         auto currentUpper {currentLower + (static_cast<numerical>(trapezesPerThread) * trapezeWidth)};
-        //std::cout << std::format("Thread #{}, trapezes: {}\n", i + 1, trapezesPerThread);
 
         data[i] = {
             integrand,
@@ -108,6 +110,9 @@ numerical approximateIntegralThreaded(T integrand, IntegralBounds bounds, int tr
     for (const auto& thread: threads) {
         pthread_join(thread, nullptr);
     }
+
+    std::chrono::duration<double> duration {std::chrono::system_clock::now() - start};
+    std::cout << std::format("Duration: {:.8f} seconds\n", duration.count());
 
     return result;
 }
