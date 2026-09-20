@@ -10,6 +10,7 @@
 #include <random>
 #include <thread>
 #include <vector>
+#include <iostream>
 
 enum class worker_status {wait, work, finish};
 
@@ -25,7 +26,7 @@ void worker(unsigned int random_seed, double& ops_per_sec, std::atomic<worker_st
 	/* for time measurements */
 	typedef std::chrono::high_resolution_clock clock;
 	/* wait for everyone to be allowed to start */
-	while(*status == worker_status::wait);
+	while(*status == worker_status::wait) {}
 	std::chrono::time_point<clock> start_time = clock::now();
 	long items = 0;
 	while(*status == worker_status::work) {
@@ -76,7 +77,7 @@ void benchmark(int threadcnt, std::string identifier, Function fun) {
 	for(auto& v : ops_per_second) {
 		result += v;
 	}
-	std::cout << identifier << u8" / threads: " << threadcnt << u8" - thousands of operations per second: " << std::fixed << result << "\n";
+	std::cout << identifier << " / threads: " << threadcnt << " - thousands of operations per second: " << std::fixed << result << "\n";
 }
 
 #endif // lacpp_benchmark_hpp
