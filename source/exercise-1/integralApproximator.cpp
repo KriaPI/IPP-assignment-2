@@ -43,7 +43,7 @@ int main (int argc, char** argv) {
 
     [[maybe_unused]] auto result = approximateIntegralThreaded(integrand, IntegralBounds{.lower = 0, .upper = 1}, trapezes, threadCount);
     
-    //std::cout << std::format("Result: {}\n", result);
+    std::cout << std::format("Result: {}\n", result);
 
     return 0;
 }
