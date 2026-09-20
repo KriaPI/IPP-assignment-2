@@ -51,4 +51,4 @@ def benchmark(name: str, start: int, end: int, stepsize: int):
 
 
 benchmark(name="exercise-1-low", start=1, end=64, stepsize=4)
-benchmark(name="exercise-1-high", start=10_000, end=100_000, stepsize=10_000)
+benchmark(name="exercise-1-high", start=10_000, end=200_000, stepsize=10_000)
