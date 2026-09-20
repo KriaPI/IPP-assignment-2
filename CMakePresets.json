@@ -10,6 +10,14 @@
             }
         },
         {
+            "name": "base-release",
+            "binaryDir": "./build",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
             "name": "mingw",
             "displayName": "MinGW-w64 makefiles",
             "inherits": ["base"],
@@ -19,6 +27,12 @@
             "name": "unix",
             "displayName": "Unix Makefiles",
             "inherits": ["base"],
+            "generator": "Unix Makefiles"
+        },
+        {
+            "name": "unix-release",
+            "displayName": "Unix Makefiles",
+            "inherits": ["base-release"],
             "generator": "Unix Makefiles"
         },
         {
