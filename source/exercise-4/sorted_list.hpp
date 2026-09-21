@@ -199,7 +199,9 @@ class sorted_list_c1 {
 template<typename T>
 class sorted_list_c2 {
 	node<T>* first = nullptr;
-	std::mutex lock; 
+	
+	// TODO: consider adding a list of locks too because a lock cannot 
+	// ensure mutual exclusion to an object owning it.
 
 	public:
 		/* default implementations:
@@ -224,7 +226,6 @@ class sorted_list_c2 {
 		}
 		/* insert v into the list */
 		void insert(T v) {
-			const std::lock_guard<std::mutex> guard {lock};
 			/* first find position */
 			node<T>* pred = nullptr;
 			node<T>* succ = first;
@@ -247,7 +248,6 @@ class sorted_list_c2 {
 		}
 
 		void remove(T v) {
-			const std::lock_guard<std::mutex> guard {lock};
 			/* first find position */
 			node<T>* pred = nullptr;
 			node<T>* current = first;
@@ -270,7 +270,6 @@ class sorted_list_c2 {
 
 		/* count elements with value v in the list */
 		std::size_t count(T v) {
-			const std::lock_guard<std::mutex> guard {lock};
 			std::size_t cnt = 0;
 			/* first go to value v */
 			node<T>* current = first;
