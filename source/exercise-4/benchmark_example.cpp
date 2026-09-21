@@ -48,8 +48,8 @@ int main(int argc, char* argv[]) {
 		std::exit(EXIT_FAILURE);
 	}
 	std::istringstream ss(argv[1]);
-	int threadcnt;
-	if (!(ss >> threadcnt)) {
+	int threadcount {0};
+	if (!(ss >> threadcount)) {
 		std::cerr << "Invalid number of threads '" << argv[1] << "'\n";
 		std::exit(EXIT_FAILURE);
 	}
@@ -60,26 +60,26 @@ int main(int argc, char* argv[]) {
 
 	/* example use of benchmarking */
 	{
-		sorted_list<int> l1;
+		sorted_list_c1<int> l1;
 		/* prefill list with 1024 elements */
 		for(int i = 0; i < DATA_PREFILL; i++) {
 			l1.insert(uniform_dist(engine));
 		}
-		benchmark(threadcnt, "non-thread-safe read", [&l1](int random){
+		benchmark(threadcount, "non-thread-safe read", [&l1](int random){
 			read(l1, random);
 		});
-		benchmark(threadcnt, "non-thread-safe update", [&l1](int random){
+		benchmark(threadcount, "non-thread-safe update", [&l1](int random){
 			update(l1, random);
 		});
 	}
 	{
 		/* start with fresh list: update test left list in random size */
-		sorted_list<int> l1;
+		sorted_list_c1<int> l1;
 		/* prefill list with 1024 elements */
 		for(int i = 0; i < DATA_PREFILL; i++) {
 			l1.insert(uniform_dist(engine));
 		}
-		benchmark(threadcnt, "non-thread-safe mixed", [&l1](int random){
+		benchmark(threadcount, "non-thread-safe mixed", [&l1](int random){
 			mixed(l1, random);
 		});
 	}
