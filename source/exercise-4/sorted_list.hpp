@@ -198,10 +198,8 @@ class sorted_list_c1 {
 /// Using fine-grained locking  
 template<typename T>
 class sorted_list_c2 {
-	node<T>* first = nullptr;
-	
-	// TODO: consider adding a list of locks too because a lock cannot 
-	// ensure mutual exclusion to an object owning it.
+	using nodeType = node<T>;
+	nodeType* first = nullptr;
 
 	public:
 		/* default implementations:
@@ -227,15 +225,15 @@ class sorted_list_c2 {
 		/* insert v into the list */
 		void insert(T v) {
 			/* first find position */
-			node<T>* pred = nullptr;
-			node<T>* succ = first;
+			nodeType* pred = nullptr;
+			nodeType* succ = first;
 			while(succ != nullptr && succ->value < v) {
 				pred = succ;
 				succ = succ->next;
 			}
 			
 			/* construct new node */
-			node<T>* current = new node<T>();
+			nodeType* current = new nodeType();
 			current->value = v;
 
 			/* insert new node between pred and succ */
@@ -249,8 +247,8 @@ class sorted_list_c2 {
 
 		void remove(T v) {
 			/* first find position */
-			node<T>* pred = nullptr;
-			node<T>* current = first;
+			nodeType* pred = nullptr;
+			nodeType* current = first;
 			while(current != nullptr && current->value < v) {
 				pred = current;
 				current = current->next;
@@ -272,7 +270,7 @@ class sorted_list_c2 {
 		std::size_t count(T v) {
 			std::size_t cnt = 0;
 			/* first go to value v */
-			node<T>* current = first;
+			nodeType* current = first;
 			while(current != nullptr && current->value < v) {
 				current = current->next;
 			}
