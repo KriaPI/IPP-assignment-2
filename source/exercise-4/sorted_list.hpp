@@ -14,6 +14,13 @@ struct node {
 	node<T>* next;
 };
 
+template<typename T, typename lockType>
+struct nodeWithLock {
+	T value;
+	nodeWithLock<T, lockType>* next;
+	lockType mutex;
+};
+
 /* non-concurrent sorted singly-linked list */
 template<typename T>
 class sorted_list {
@@ -198,8 +205,10 @@ class sorted_list_c1 {
 /// Using fine-grained locking  
 template<typename T>
 class sorted_list_c2 {
-	using nodeType = node<T>;
+	using nodeType = nodeWithLock<T, std::mutex>;
+	// These are only sentinels.
 	nodeType* first = nullptr;
+	nodeType* last = nullptr;
 
 	public:
 		/* default implementations:
@@ -212,24 +221,45 @@ class sorted_list_c2 {
 		 * The first is required due to the others,
 		 * which are explicitly listed due to the rule of five.
 		 */
-		sorted_list_c2() = default;
+		sorted_list_c2(T start_sentinel, T end_sentinel) {
+			first = new nodeType();
+			first->value = start_sentinel;
+
+			last = new nodeType();
+			last->value = end_sentinel;
+			
+			first->next = last;
+		}
 		sorted_list_c2(const sorted_list_c2<T>& other) = default;
 		sorted_list_c2(sorted_list_c2<T>&& other) = default;
 		sorted_list_c2<T>& operator=(const sorted_list_c2<T>& other) = default;
 		sorted_list_c2<T>& operator=(sorted_list_c2<T>&& other) = default;
 		~sorted_list_c2() {
-			while(first != nullptr) {
-				remove(first->value);
+			// while(first->next != nullptr) {
+			// 	remove(first->value);
+			// }
+
+			auto current = first->next;
+			while (current != last) {
+				remove(current->value);
 			}
+
+			delete last;
+			delete first;
 		}
 		/* insert v into the list */
 		void insert(T v) {
 			/* first find position */
-			nodeType* pred = nullptr;
-			nodeType* succ = first;
-			while(succ != nullptr && succ->value < v) {
+			first->mutex.lock();
+			nodeType* pred = first;
+			nodeType* succ = pred->next;
+			succ->mutex.lock();
+
+			while(succ->value < v) {
+				pred->mutex.unlock();
 				pred = succ;
 				succ = succ->next;
+				succ->mutex.lock();
 			}
 			
 			/* construct new node */
@@ -238,47 +268,71 @@ class sorted_list_c2 {
 
 			/* insert new node between pred and succ */
 			current->next = succ;
-			if(pred == nullptr) {
-				first = current;
-			} else {
-				pred->next = current;
-			}
+			pred->next = current;
+
+			succ->mutex.unlock();
+			pred->mutex.unlock();
 		}
 
 		void remove(T v) {
 			/* first find position */
-			nodeType* pred = nullptr;
-			nodeType* current = first;
-			while(current != nullptr && current->value < v) {
+			first->mutex.lock();
+			nodeType* pred = first;
+			nodeType* current = first->next;
+			current->mutex.lock();
+
+			while(current->value < v) {
+				pred->mutex.unlock();
 				pred = current;
-				current = current->next;
+				current = pred->next;
+				current->mutex.lock();
 			}
-			if(current == nullptr || current->value != v) {
+
+			// Note: we never need to worry about removing the first and last node containing sentinel values since 
+			// v can never be any of the sentinels (except when the deconstructor is called, but at that point we do not care). 
+			if(current->value == v) {
 				/* v not found */
-				return;
-			}
-			/* remove current */
-			if(pred == nullptr) {
-				first = current->next;
+
+				// Something strange is happening here! Some free-after-use is cause by this.
+				auto afterCurrent = current->next; 
+				pred->next = afterCurrent;
+				current->mutex.unlock();
+				delete current;	
 			} else {
-				pred->next = current->next;
+				current->mutex.unlock();
 			}
-			delete current;
+			
+			pred->mutex.unlock();
 		}
 
 		/* count elements with value v in the list */
 		std::size_t count(T v) {
 			std::size_t cnt = 0;
 			/* first go to value v */
-			nodeType* current = first;
-			while(current != nullptr && current->value < v) {
-				current = current->next;
+			first->mutex.lock();
+			nodeType* pred = first;
+			nodeType* current = first->next;
+			current->mutex.lock();
+
+			while(current->value < v) {
+				pred->mutex.unlock();
+				pred = current;
+				current = pred->next;
+				current->mutex.lock();
 			}
+
 			/* count elements */
-			while(current != nullptr && current->value == v) {
+			while(current->value == v) {
 				cnt++;
+				pred->mutex.unlock();
+				pred = current;
 				current = current->next;
+				current->mutex.lock();
 			}
+			
+			current->mutex.unlock();
+			pred->mutex.unlock();
+
 			return cnt;
 		}
 };

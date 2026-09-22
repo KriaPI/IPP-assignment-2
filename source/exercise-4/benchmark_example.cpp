@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
 
 	/* example use of benchmarking */
 	{
-		sorted_list_c1<int> l1;
+		sorted_list_c2<int> l1(DATA_VALUE_RANGE_MIN - 1, DATA_VALUE_RANGE_MAX + 1);
 		/* prefill list with 1024 elements */
 		for(int i = 0; i < DATA_PREFILL; i++) {
 			l1.insert(uniform_dist(engine));
@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
 	}
 	{
 		/* start with fresh list: update test left list in random size */
-		sorted_list_c1<int> l1;
+		sorted_list_c2<int> l1(DATA_VALUE_RANGE_MIN - 1, DATA_VALUE_RANGE_MAX + 1);
 		/* prefill list with 1024 elements */
 		for(int i = 0; i < DATA_PREFILL; i++) {
 			l1.insert(uniform_dist(engine));
