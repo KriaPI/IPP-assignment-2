@@ -239,9 +239,12 @@ class sorted_list_c2 {
 			// 	remove(first->value);
 			// }
 
-			auto current = first->next;
+			auto pred = first->next;
+			auto current = pred;
 			while (current != last) {
-				remove(current->value);
+				pred = current;
+				current = current->next;
+				remove(pred->value);
 			}
 
 			delete last;
@@ -294,8 +297,7 @@ class sorted_list_c2 {
 				/* v not found */
 
 				// Something strange is happening here! Some free-after-use is cause by this.
-				auto afterCurrent = current->next; 
-				pred->next = afterCurrent;
+				pred->next = current->next;
 				current->mutex.unlock();
 				delete current;	
 			} else {
