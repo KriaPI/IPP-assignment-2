@@ -41,19 +41,46 @@ void mixed(List& l, int random) {
 	}
 }
 
-int main(int argc, char* argv[]) {
-	/* get number of threads from command line */
-	if(argc < 2) {
-		std::cerr << "Please specify number of worker threads: " << argv[0] << " <number>\n";
-		std::exit(EXIT_FAILURE);
+// Yes, there's probably some smart way to do this with templates to avoid code duplication,
+// but that takes time and I don't have time for that (but I do have time to write this meaningless comment)
+
+void setupAndBenchmark1(int threadcount) {
+	std::random_device rd;
+	std::mt19937 engine(rd());
+	std::uniform_int_distribution<int> uniform_dist(DATA_VALUE_RANGE_MIN, DATA_VALUE_RANGE_MAX);
+
+	/* example use of benchmarking */
+	{
+		//sorted_list_c2<int> l1(DATA_VALUE_RANGE_MIN - 1, DATA_VALUE_RANGE_MAX + 1);
+		sorted_list_c1<int> l1;
+		
+		/* prefill list with 1024 elements */
+		for(int i = 0; i < DATA_PREFILL; i++) {
+			l1.insert(uniform_dist(engine));
+		}
+		benchmark(threadcount, "non-thread-safe read", [&l1](int random){
+			read(l1, random);
+		});
+		benchmark(threadcount, "non-thread-safe update", [&l1](int random){
+			update(l1, random);
+		});
 	}
-	std::istringstream ss(argv[1]);
-	int threadcount {0};
-	if (!(ss >> threadcount)) {
-		std::cerr << "Invalid number of threads '" << argv[1] << "'\n";
-		std::exit(EXIT_FAILURE);
+	{
+		/* start with fresh list: update test left list in random size */
+		//sorted_list_c2<int> l1(DATA_VALUE_RANGE_MIN - 1, DATA_VALUE_RANGE_MAX + 1);
+		sorted_list_c1<int> l1;
+
+		/* prefill list with 1024 elements */
+		for(int i = 0; i < DATA_PREFILL; i++) {
+			l1.insert(uniform_dist(engine));
+		}
+		benchmark(threadcount, "non-thread-safe mixed", [&l1](int random){
+			mixed(l1, random);
+		});
 	}
-	/* set up random number generator */
+}
+
+void setupAndBenchmark2(int threadcount) {
 	std::random_device rd;
 	std::mt19937 engine(rd());
 	std::uniform_int_distribution<int> uniform_dist(DATA_VALUE_RANGE_MIN, DATA_VALUE_RANGE_MAX);
@@ -61,6 +88,7 @@ int main(int argc, char* argv[]) {
 	/* example use of benchmarking */
 	{
 		sorted_list_c2<int> l1(DATA_VALUE_RANGE_MIN - 1, DATA_VALUE_RANGE_MAX + 1);
+		
 		/* prefill list with 1024 elements */
 		for(int i = 0; i < DATA_PREFILL; i++) {
 			l1.insert(uniform_dist(engine));
@@ -75,6 +103,7 @@ int main(int argc, char* argv[]) {
 	{
 		/* start with fresh list: update test left list in random size */
 		sorted_list_c2<int> l1(DATA_VALUE_RANGE_MIN - 1, DATA_VALUE_RANGE_MAX + 1);
+
 		/* prefill list with 1024 elements */
 		for(int i = 0; i < DATA_PREFILL; i++) {
 			l1.insert(uniform_dist(engine));
@@ -83,5 +112,97 @@ int main(int argc, char* argv[]) {
 			mixed(l1, random);
 		});
 	}
+}
+
+void setupAndBenchmark3(int threadcount) {
+	std::random_device rd;
+	std::mt19937 engine(rd());
+	std::uniform_int_distribution<int> uniform_dist(DATA_VALUE_RANGE_MIN, DATA_VALUE_RANGE_MAX);
+
+	/* example use of benchmarking */
+	{
+		//sorted_list_c2<int> l1(DATA_VALUE_RANGE_MIN - 1, DATA_VALUE_RANGE_MAX + 1);
+		sorted_list_c3<int> l1;
+		
+		/* prefill list with 1024 elements */
+		for(int i = 0; i < DATA_PREFILL; i++) {
+			l1.insert(uniform_dist(engine));
+		}
+		benchmark(threadcount, "non-thread-safe read", [&l1](int random){
+			read(l1, random);
+		});
+		benchmark(threadcount, "non-thread-safe update", [&l1](int random){
+			update(l1, random);
+		});
+	}
+	{
+		/* start with fresh list: update test left list in random size */
+		//sorted_list_c2<int> l1(DATA_VALUE_RANGE_MIN - 1, DATA_VALUE_RANGE_MAX + 1);
+		sorted_list_c3<int> l1;
+
+		/* prefill list with 1024 elements */
+		for(int i = 0; i < DATA_PREFILL; i++) {
+			l1.insert(uniform_dist(engine));
+		}
+		benchmark(threadcount, "non-thread-safe mixed", [&l1](int random){
+			mixed(l1, random);
+		});
+	}
+}
+
+void setupAndBenchmark4(int threadcount) {
+	std::random_device rd;
+	std::mt19937 engine(rd());
+	std::uniform_int_distribution<int> uniform_dist(DATA_VALUE_RANGE_MIN, DATA_VALUE_RANGE_MAX);
+
+	/* example use of benchmarking */
+	{
+		sorted_list_c4<int> l1(DATA_VALUE_RANGE_MIN - 1, DATA_VALUE_RANGE_MAX + 1);
+		
+		/* prefill list with 1024 elements */
+		for(int i = 0; i < DATA_PREFILL; i++) {
+			l1.insert(uniform_dist(engine));
+		}
+		benchmark(threadcount, "non-thread-safe read", [&l1](int random){
+			read(l1, random);
+		});
+		benchmark(threadcount, "non-thread-safe update", [&l1](int random){
+			update(l1, random);
+		});
+	}
+	{
+		/* start with fresh list: update test left list in random size */
+		sorted_list_c4<int> l1(DATA_VALUE_RANGE_MIN - 1, DATA_VALUE_RANGE_MAX + 1);
+
+		/* prefill list with 1024 elements */
+		for(int i = 0; i < DATA_PREFILL; i++) {
+			l1.insert(uniform_dist(engine));
+		}
+		benchmark(threadcount, "non-thread-safe mixed", [&l1](int random){
+			mixed(l1, random);
+		});
+	}
+}
+
+
+int main(int argc, char* argv[]) {
+	/* get number of threads from command line */
+	if(argc < 2) {
+		std::cerr << "Please specify number of worker threads: " << argv[0] << " <number>\n";
+		std::exit(EXIT_FAILURE);
+	}
+	std::istringstream ss(argv[1]);
+	int threadcount {0};
+	if (!(ss >> threadcount)) {
+		std::cerr << "Invalid number of threads '" << argv[1] << "'\n";
+		std::exit(EXIT_FAILURE);
+	}
+	/* set up random number generator */
+	
+	//setupAndBenchmark1(threadcount);
+	//setupAndBenchmark2(threadcount);
+	//setupAndBenchmark3(threadcount);
+	setupAndBenchmark4(threadcount);
+	
 	return EXIT_SUCCESS;
 }

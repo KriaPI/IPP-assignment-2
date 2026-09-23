@@ -2,6 +2,7 @@
 #ifndef lacpp_sorted_list_hpp
 #define lacpp_sorted_list_hpp lacpp_sorted_list_hpp
 #include <cstddef>
+#include "locks.hpp"
 
 /* a sorted list implementation by David Klaftenegger, 2015
  * please report bugs or suggest improvements to david.klaftenegger@it.uu.se
@@ -111,10 +112,10 @@ class sorted_list {
 
 
 /// Using course-grained locking 
-template<typename T>
-class sorted_list_c1 {
+template<typename T, typename  lockType>
+class sorted_list_course_grained {
 	node<T>* first = nullptr;
-	std::mutex lock; 
+	lockType lock; 
 
 	public:
 		/* default implementations:
@@ -127,19 +128,19 @@ class sorted_list_c1 {
 		 * The first is required due to the others,
 		 * which are explicitly listed due to the rule of five.
 		 */
-		sorted_list_c1() = default;
-		sorted_list_c1(const sorted_list_c1<T>& other) = default;
-		sorted_list_c1(sorted_list_c1<T>&& other) = default;
-		sorted_list_c1<T>& operator=(const sorted_list_c1<T>& other) = default;
-		sorted_list_c1<T>& operator=(sorted_list_c1<T>&& other) = default;
-		~sorted_list_c1() {
+		sorted_list_course_grained() = default;
+		sorted_list_course_grained(const sorted_list_course_grained<T, lockType>& other) = default;
+		sorted_list_course_grained(sorted_list_course_grained<T, lockType>&& other) = default;
+		sorted_list_course_grained<T, lockType>& operator=(const sorted_list_course_grained<T, lockType>& other) = default;
+		sorted_list_course_grained<T, lockType>& operator=(sorted_list_course_grained<T, lockType>&& other) = default;
+		~sorted_list_course_grained() {
 			while(first != nullptr) {
 				remove(first->value);
 			}
 		}
 		/* insert v into the list */
 		void insert(T v) {
-			const std::lock_guard<std::mutex> guard {lock};
+			const std::lock_guard<lockType> guard {lock};
 			/* first find position */
 			node<T>* pred = nullptr;
 			node<T>* succ = first;
@@ -162,7 +163,7 @@ class sorted_list_c1 {
 		}
 
 		void remove(T v) {
-			const std::lock_guard<std::mutex> guard {lock};
+			const std::lock_guard<lockType> guard {lock};
 			/* first find position */
 			node<T>* pred = nullptr;
 			node<T>* current = first;
@@ -185,7 +186,7 @@ class sorted_list_c1 {
 
 		/* count elements with value v in the list */
 		std::size_t count(T v) {
-			const std::lock_guard<std::mutex> guard {lock};
+			const std::lock_guard<lockType> guard {lock};
 			std::size_t cnt = 0;
 			/* first go to value v */
 			node<T>* current = first;
@@ -203,9 +204,9 @@ class sorted_list_c1 {
 
 
 /// Using fine-grained locking  
-template<typename T>
-class sorted_list_c2 {
-	using nodeType = nodeWithLock<T, std::mutex>;
+template<typename T, typename L>
+class sorted_list_fine_grained {
+	using nodeType = nodeWithLock<T, L>;
 	// These are only sentinels.
 	nodeType* first = nullptr;
 	nodeType* last = nullptr;
@@ -221,7 +222,7 @@ class sorted_list_c2 {
 		 * The first is required due to the others,
 		 * which are explicitly listed due to the rule of five.
 		 */
-		sorted_list_c2(T start_sentinel, T end_sentinel) {
+		sorted_list_fine_grained(T start_sentinel, T end_sentinel) {
 			first = new nodeType();
 			first->value = start_sentinel;
 
@@ -230,11 +231,11 @@ class sorted_list_c2 {
 			
 			first->next = last;
 		}
-		sorted_list_c2(const sorted_list_c2<T>& other) = default;
-		sorted_list_c2(sorted_list_c2<T>&& other) = default;
-		sorted_list_c2<T>& operator=(const sorted_list_c2<T>& other) = default;
-		sorted_list_c2<T>& operator=(sorted_list_c2<T>&& other) = default;
-		~sorted_list_c2() {
+		sorted_list_fine_grained(const sorted_list_fine_grained<T, L>& other) = default;
+		sorted_list_fine_grained(sorted_list_fine_grained<T, L>&& other) = default;
+		sorted_list_fine_grained<T, L>& operator=(const sorted_list_fine_grained<T, L>& other) = default;
+		sorted_list_fine_grained<T, L>& operator=(sorted_list_fine_grained<T, L>&& other) = default;
+		~sorted_list_fine_grained() {
 			// while(first->next != nullptr) {
 			// 	remove(first->value);
 			// }
@@ -338,5 +339,18 @@ class sorted_list_c2 {
 			return cnt;
 		}
 };
+
+
+template  <typename T>
+using sorted_list_c1 = sorted_list_course_grained<T, std::mutex>;
+
+template  <typename T>
+using sorted_list_c2 = sorted_list_fine_grained<T, std::mutex>;
+
+template  <typename T>
+using sorted_list_c3 = sorted_list_course_grained<T, TATASLock>;
+
+template  <typename T>
+using sorted_list_c4 = sorted_list_fine_grained<T, TATASLock>;
 
 #endif // lacpp_sorted_list_hpp
