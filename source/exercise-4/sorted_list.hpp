@@ -300,12 +300,12 @@ class sorted_list_fine_grained {
 				// Something strange is happening here! Some free-after-use is cause by this.
 				pred->next = current->next;
 				current->mutex.unlock();
+				pred->mutex.unlock();
 				delete current;	
 			} else {
 				current->mutex.unlock();
+				pred->mutex.unlock();
 			}
-			
-			pred->mutex.unlock();
 		}
 
 		/* count elements with value v in the list */
@@ -352,5 +352,8 @@ using sorted_list_c3 = sorted_list_course_grained<T, TATASLock>;
 
 template  <typename T>
 using sorted_list_c4 = sorted_list_fine_grained<T, TATASLock>;
+
+template  <typename T>
+using sorted_list_c5 = sorted_list_fine_grained<T, CLHLock>;
 
 #endif // lacpp_sorted_list_hpp

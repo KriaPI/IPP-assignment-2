@@ -184,6 +184,40 @@ void setupAndBenchmark4(int threadcount) {
 	}
 }
 
+void setupAndBenchmark5(int threadcount) {
+	std::random_device rd;
+	std::mt19937 engine(rd());
+	std::uniform_int_distribution<int> uniform_dist(DATA_VALUE_RANGE_MIN, DATA_VALUE_RANGE_MAX);
+
+	/* example use of benchmarking */
+	{
+		sorted_list_c5<int> l1(DATA_VALUE_RANGE_MIN - 1, DATA_VALUE_RANGE_MAX + 1);
+		
+		/* prefill list with 1024 elements */
+		for(int i = 0; i < DATA_PREFILL; i++) {
+			l1.insert(uniform_dist(engine));
+		}
+		benchmark(threadcount, "non-thread-safe read", [&l1](int random){
+			read(l1, random);
+		});
+		benchmark(threadcount, "non-thread-safe update", [&l1](int random){
+			update(l1, random);
+		});
+	}
+	{
+		/* start with fresh list: update test left list in random size */
+		sorted_list_c5<int> l1(DATA_VALUE_RANGE_MIN - 1, DATA_VALUE_RANGE_MAX + 1);
+
+		/* prefill list with 1024 elements */
+		for(int i = 0; i < DATA_PREFILL; i++) {
+			l1.insert(uniform_dist(engine));
+		}
+		benchmark(threadcount, "non-thread-safe mixed", [&l1](int random){
+			mixed(l1, random);
+		});
+	}
+}
+
 
 int main(int argc, char* argv[]) {
 	/* get number of threads from command line */
@@ -199,10 +233,14 @@ int main(int argc, char* argv[]) {
 	}
 	/* set up random number generator */
 	
-	//setupAndBenchmark1(threadcount);
-	//setupAndBenchmark2(threadcount);
-	//setupAndBenchmark3(threadcount);
+	setupAndBenchmark1(threadcount);
+	std::cout << "\n\n";
+	setupAndBenchmark2(threadcount);
+	std::cout << "\n\n";
+	setupAndBenchmark3(threadcount);
+	std::cout << "\n\n";
 	setupAndBenchmark4(threadcount);
-	
+	//setupAndBenchmark5(threadcount);
+
 	return EXIT_SUCCESS;
 }
