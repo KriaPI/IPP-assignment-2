@@ -7,3 +7,5 @@ add_executable(exercise4
     exercise-4/benchmark.hpp
     exercise-4/sorted_list.hpp
 )
+
+add_executable(exercise2 exercise-2/sieve.cpp)
