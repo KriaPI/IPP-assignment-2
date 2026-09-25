@@ -92,6 +92,8 @@ int main() {
         contexts[it].seeds = &seeds;
     }
 
+    auto start = std::chrono::high_resolution_clock::now();
+
     for(it=0; it<threadCount; ++it) {
         pthread_create(&threads[it], nullptr, wrapper, &contexts[it]);
 
@@ -100,6 +102,14 @@ int main() {
     for(it=0; it<threadCount; ++it) {
         pthread_join(threads[it], nullptr);
     }
+
+    auto end = std::chrono::high_resolution_clock::now();
+
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+    end - start
+    );
+
+    std::cout << "\nExecution time: " << duration.count() << " ms\n";
 
     std::cout << "\n\nParallelly computed prime values: ";
     for(int num=sqrtMaxValue+1; num<=maxValue; ++num) {
